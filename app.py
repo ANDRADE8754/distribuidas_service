@@ -2,6 +2,7 @@ import os
 import smtplib
 from email.message import EmailMessage
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from mssql_python import connect
 
 app = Flask(__name__)
@@ -10,12 +11,13 @@ app = Flask(__name__)
 def enviar_correo_alerta(asunto, mensaje, destino):
     smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
     smtp_port = int(os.getenv("SMTP_PORT", "587"))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_password = os.getenv("SMTP_PASSWORD")
+
+    smtp_user = os.getenv("EMAIL_USER") 
+    smtp_password = os.getenv("EMAIL_PASSWORD")
     remitente = os.getenv("SMTP_FROM", smtp_user)
 
-    if not smtp_user or not smtp_password or not remitente:
-        raise ValueError("Faltan credenciales SMTP en variables de entorno")
+    if not smtp_user or not smtp_password:
+        raise ValueError("Faltan EMAIL_USER o EMAIL_PASSWORD en las variables de Render")
 
     email = EmailMessage()
     email["From"] = remitente
