@@ -6,7 +6,7 @@ from flask_cors import CORS
 from mssql_python import connect
 
 app = Flask(__name__)
-
+CORS(app)
 
 def enviar_correo_alerta(asunto, mensaje, destino):
     smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
