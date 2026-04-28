@@ -16,7 +16,7 @@ def enviar_correo_alerta(asunto, mensaje, destino):
         raise ValueError("RESEND_API_KEY no configurada en Render")
 
     resend.Emails.send({
-        "from": "Alertas <alertas@distribuidas.com>",  # tu dominio verificado
+        "from": "Alertas <onboarding@resend.dev>",
         "to": [destino],
         "subject": asunto,
         "text": mensaje,
