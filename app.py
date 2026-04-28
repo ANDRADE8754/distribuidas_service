@@ -4,39 +4,23 @@ from email.message import EmailMessage
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from mssql_python import connect
-import smtplib
-import ssl
+import resend
 
 app = Flask(__name__)
 CORS(app)
 
 def enviar_correo_alerta(asunto, mensaje, destino):
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 465 # Seguiremos con SSL directo
-    
-    smtp_user = os.getenv("EMAIL_USER")
-    smtp_password = os.getenv("EMAIL_PASSWORD")
+    resend.api_key = os.getenv("RESEND_API_KEY")
 
-    if not smtp_user or not smtp_password:
-        raise ValueError("Credenciales no configuradas en Render")
+    if not resend.api_key:
+        raise ValueError("RESEND_API_KEY no configurada en Render")
 
-    # Creamos un contexto de seguridad por defecto
-    context = ssl.create_default_context()
-
-    email = EmailMessage()
-    email["From"] = smtp_user
-    email["To"] = destino
-    email["Subject"] = asunto
-    email.set_content(mensaje)
-
-    # Añadimos timeout para que no se cuelgue si la red falla
-    try:
-        with smtplib.SMTP_SSL(smtp_server, smtp_port, context=context, timeout=15) as server:
-            server.login(smtp_user, smtp_password)
-            server.send_message(email)
-    except Exception as e:
-        print(f"Error detallado: {e}")
-        raise e
+    resend.Emails.send({
+        "from": "Alertas <alertas@distribuidas.com>",  # tu dominio verificado
+        "to": [destino],
+        "subject": asunto,
+        "text": mensaje,
+    })
 
 def get_connection():
     # Se utilizan variables de entorno por seguridad, con los valores por defecto para pruebas locales
@@ -147,27 +131,19 @@ def listar_productos():
 @app.route("/enviar-alerta", methods=["POST"])
 def enviar_alerta():
     try:
-        data = request.get_json() or {}
+        data    = request.get_json() or {}
         destino = data.get("to")
-        asunto = data.get("subject")
+        asunto  = data.get("subject")
         mensaje = data.get("message")
 
         if not destino or not asunto or not mensaje:
-            return jsonify({
-                "success": False,
-                "message": "Faltan datos"
-            }), 400
+            return jsonify({"success": False, "message": "Faltan datos"}), 400
 
         enviar_correo_alerta(asunto, mensaje, destino)
-        return jsonify({
-            "success": True,
-            "message": "Correo enviado"
-        })
+        return jsonify({"success": True, "message": "Correo enviado"})
+
     except Exception as e:
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

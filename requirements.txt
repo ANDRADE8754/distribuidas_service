@@ -1,3 +1,4 @@
+resend
 Flask==3.0.3
 flask-cors
 gunicorn==22.0.0
