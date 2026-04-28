@@ -4,18 +4,21 @@ from email.message import EmailMessage
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from mssql_python import connect
+import smtplib
 
 app = Flask(__name__)
 CORS(app)
 
 def enviar_correo_alerta(asunto, mensaje, destino):
+    # Cambiamos a SSL y puerto 465
     smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    smtp_user = os.getenv("EMAIL_USER")
+    smtp_port = 465 
+    
+    smtp_user = os.getenv("EMAIL_USER") 
     smtp_password = os.getenv("EMAIL_PASSWORD")
 
     if not smtp_user or not smtp_password:
-        raise ValueError("Credenciales no encontradas en Render")
+        raise ValueError("Faltan credenciales en Render")
 
     email = EmailMessage()
     email["From"] = smtp_user
@@ -23,15 +26,11 @@ def enviar_correo_alerta(asunto, mensaje, destino):
     email["Subject"] = asunto
     email.set_content(mensaje)
 
-    # Añadimos un timeout de 10 segundos para que no bloquee el servidor
-    try:
-        with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_password)
-            server.send_message(email)
-    except Exception as e:
-        print(f"Error SMTP: {e}") # Esto saldrá en los logs de Render
-        raise e
+    # Usamos SMTP_SSL para el puerto 465
+    # Agregamos un timeout de 10 segundos para que no se cuelgue
+    with smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=10) as server:
+        server.login(smtp_user, smtp_password)
+        server.send_message(email)
 
 def get_connection():
     # Se utilizan variables de entorno por seguridad, con los valores por defecto para pruebas locales
