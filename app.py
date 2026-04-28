@@ -9,26 +9,29 @@ app = Flask(__name__)
 CORS(app)
 
 def enviar_correo_alerta(asunto, mensaje, destino):
-    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
-
-    smtp_user = os.getenv("EMAIL_USER") 
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+    smtp_user = os.getenv("EMAIL_USER")
     smtp_password = os.getenv("EMAIL_PASSWORD")
-    remitente = os.getenv("SMTP_FROM", smtp_user)
 
     if not smtp_user or not smtp_password:
-        raise ValueError("Faltan EMAIL_USER o EMAIL_PASSWORD en las variables de Render")
+        raise ValueError("Credenciales no encontradas en Render")
 
     email = EmailMessage()
-    email["From"] = remitente
+    email["From"] = smtp_user
     email["To"] = destino
     email["Subject"] = asunto
     email.set_content(mensaje)
 
-    with smtplib.SMTP(smtp_server, smtp_port) as server:
-        server.starttls()
-        server.login(smtp_user, smtp_password)
-        server.send_message(email)
+    # Añadimos un timeout de 10 segundos para que no bloquee el servidor
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port, timeout=10) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.send_message(email)
+    except Exception as e:
+        print(f"Error SMTP: {e}") # Esto saldrá en los logs de Render
+        raise e
 
 def get_connection():
     # Se utilizan variables de entorno por seguridad, con los valores por defecto para pruebas locales
